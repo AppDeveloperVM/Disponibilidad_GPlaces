@@ -1,7 +1,9 @@
-package application.android.vicinflames.disponibilidad_gplaces;
+package application.android.vicinflames.disponibilidad_gplaces.Activities;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import application.android.vicinflames.disponibilidad_gplaces.R;
 
 public class MainActivity extends AppCompatActivity {
 
