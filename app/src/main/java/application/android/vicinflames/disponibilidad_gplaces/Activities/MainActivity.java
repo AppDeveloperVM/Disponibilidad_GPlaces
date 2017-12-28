@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
         switch( item.getItemId() ) {
             case R.id.new_place:
-                Toast.makeText(this, "Item " + item.getItemId() + "elegido!" , Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Item 1 elegido!" , Toast.LENGTH_SHORT).show();
 
         }
         return true;
