@@ -9,12 +9,15 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +32,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import application.android.vicinflames.disponibilidad_gplaces.Activities.MainActivity;
+import application.android.vicinflames.disponibilidad_gplaces.Activities.MapsActivity;
 import application.android.vicinflames.disponibilidad_gplaces.R;
 
 import static android.content.Context.LOCATION_SERVICE;
@@ -39,6 +44,8 @@ import static android.content.Context.LOCATION_SERVICE;
 
 public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener, LocationListener {
 
+    private static final int MY_PERMISSIONS_REQUEST_ACCESS_LOCATION = 1;
+
     private View rootView;
     private MapView mapView;
     private GoogleMap gmap;
@@ -48,7 +55,7 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
     private LocationManager locationManager;
     private Location currentLocation;
 
-    private Marker marker;
+    private Marker marker = null;
     private CameraPosition camera;
 
     public MpFragment(){
@@ -62,7 +69,7 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
 
         fab = (FloatingActionButton)rootView.findViewById(R.id.fab);
         fab.setOnClickListener(this);
-        fab.setEnabled(false);
+        //fab.setEnabled(true);
 
         return rootView;
     }
@@ -84,6 +91,19 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
     @Override
     public void onResume() {
         super.onResume();
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (ContextCompat.checkSelfPermission(getContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            locationManager.removeUpdates(this);
+        }
     }
 
     @Override
@@ -93,33 +113,50 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
         locationManager = (LocationManager) getContext().getSystemService(LOCATION_SERVICE);
 
 
+        //comprobar si los permisos de POSICION están activados
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+                if ( ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                        &&
+                        ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) ) {
+
+                        Toast.makeText(getContext(), "Permisos no habilitados!",Toast.LENGTH_SHORT).show();
+
+                        //en caso de no estar activados los permisos, se piden!
+                        ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                            MY_PERMISSIONS_REQUEST_ACCESS_LOCATION);
+
+                // Show an expanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+                } else {
+
+                    Toast.makeText(getContext(), "Permisos habilitados!",Toast.LENGTH_SHORT).show();
+
+                    // No explanation needed, we can request the permission.
+
+                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                            MY_PERMISSIONS_REQUEST_ACCESS_LOCATION);
+
+
+                    // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                    // app-defined int constant. The callback method gets the
+                    // result of the request.
+                }
             return;
         }
 
-        //gmap.setMyLocationEnabled(true);
+
+        gmap.setMyLocationEnabled(true);
         //desactivando boton de "llevar a mi posicion"
-        //gmap.getUiSettings().setMyLocationButtonEnabled(false);
-
-        //LatLng latlong = new LatLng(39.569600,2.650160);
-
-        /*try {
-            marker.setPosition(latlong);
-        }catch(Exception e){
-            Toast.makeText(getContext(), "Error,"+ e, Toast.LENGTH_SHORT).show();
-        }*/
+        gmap.getUiSettings().setMyLocationButtonEnabled(false);
 
 
         //debería de crear un checking de conexiones, si existe la conexion a internet omitir gps, ya que tarda mucho
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, this);
+        //locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, this);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
 
     }
@@ -218,15 +255,7 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
 
         fab.setEnabled(true);
         Toast.makeText(getContext(), "Changed! " + "\nLong: " + location.getLongitude() + "\nLat: " + location.getLongitude(), Toast.LENGTH_SHORT).show();
-        //createOrUpdateMarkerByLocation(location);
-
-
-        if(marker == null){
-            marker = gmap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).draggable(true));
-        }else{
-            //marker = gmap.addMarker(new MarkerOptions().position(new LatLng(39.569600,2.650160)).draggable(true));
-            marker.setPosition(new LatLng(location.getLatitude(), location.getLongitude()));
-        }
+        createOrUpdateMarkerByLocation(location);
 
     }
 
@@ -247,6 +276,42 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
     public void onProviderDisabled(String s) {
 
     }
+
+
+    //PERMISOS
+    //sobreescribimos un metodo
+    /*
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_ACCESS_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
+
+    //checkeamos si el permiso correspondiente está garantizado
+
+    private boolean CheckPermission(String permission){
+        int result = this.checkCallingOrSelfPermission(permission);
+        return result == PackageManager.PERMISSION_GRANTED;
+    }
+    */
 
 
 }
