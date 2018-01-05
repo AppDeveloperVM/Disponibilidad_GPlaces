@@ -7,11 +7,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import application.android.vicinflames.disponibilidad_gplaces.Fragments.DataFragment;
 import application.android.vicinflames.disponibilidad_gplaces.Fragments.MpFragment;
 import application.android.vicinflames.disponibilidad_gplaces.Fragments.Welcome_Fragment;
 import application.android.vicinflames.disponibilidad_gplaces.R;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements MpFragment.DataListener{
 
     Fragment currentFragment;
 
@@ -27,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+
 
     //-- MENÚ OPCIONES --
     @Override
@@ -52,6 +55,11 @@ public class MainActivity extends AppCompatActivity {
                 currentFragment = new MpFragment();
                 Toast.makeText(this, "Item 2 elegido!" , Toast.LENGTH_SHORT).show();
                 break;
+            //opcion 3 - pantalla de datos ( resumen )
+            case R.id.data_resume:
+                currentFragment = new DataFragment();
+                Toast.makeText(this, "Item 3 elegido!" , Toast.LENGTH_SHORT).show();
+                break;
         }
 
         changeFragment(currentFragment);
@@ -64,4 +72,16 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.fragment_container, fragment).commit();
     }
 
+
+    @Override
+    public void sendData(String text) {
+        //llamar al método renderizarTexto de el DataFragment
+        // pasando el texto que recibimos por parámetro en este mismo método
+
+        //currentFragment = new DataFragment();
+        //(currentFragment);
+
+        DataFragment dataFragment = (DataFragment) getSupportFragmentManager().findFragmentById(R.id.data_fragment);
+        dataFragment.renderText(text);
+    }
 }

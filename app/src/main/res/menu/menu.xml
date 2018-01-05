@@ -4,4 +4,5 @@
 
     <item android:title="@string/welcome_screen" android:id="@+id/welcome_screen" />
     <item android:title="@string/new_place" android:id="@+id/new_place" />
+    <item android:title="@string/data_resume" android:id="@+id/data_resume" />
 </menu>

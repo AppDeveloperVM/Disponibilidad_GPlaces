@@ -3,6 +3,7 @@ package application.android.vicinflames.disponibilidad_gplaces.Fragments;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,17 +22,22 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.zip.DataFormatException;
+
+import application.android.vicinflames.disponibilidad_gplaces.Activities.DataActivity;
 import application.android.vicinflames.disponibilidad_gplaces.Activities.MainActivity;
 import application.android.vicinflames.disponibilidad_gplaces.Activities.MapsActivity;
 import application.android.vicinflames.disponibilidad_gplaces.R;
@@ -58,8 +64,25 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
     private Marker marker = null;
     private CameraPosition camera;
 
+    private Button btn_save_data;
+
+    //Interfaz
+    private DataListener callback;
+
+
     public MpFragment(){
 
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        try{
+            callback = (DataListener) context;
+        }catch(Exception e){
+            throw new ClassCastException(context.toString() + " should implement DataListener");
+        }
     }
 
     @Override
@@ -69,10 +92,25 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
 
         fab = (FloatingActionButton)rootView.findViewById(R.id.fab);
         fab.setOnClickListener(this);
-        //fab.setEnabled(true);
+        fab.setEnabled(true);
+
+        btn_save_data = (Button)rootView.findViewById(R.id.btn_save_data);
+
+        final String datos_a_enviar = "Datos a enviar!";
+
+        btn_save_data.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String textToSend = "Datos a enviar!";
+                callback.sendData(textToSend);
+            }
+        });
 
         return rootView;
     }
+
+
+
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
@@ -157,7 +195,7 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
 
         //debería de crear un checking de conexiones, si existe la conexion a internet omitir gps, ya que tarda mucho
         //locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, this);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, this);
 
     }
 
@@ -226,13 +264,22 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
             if (currentLocation != null) {
                 createOrUpdateMarkerByLocation(location);
                 zoomToLocation(location);
+
+                //resume_data(location);
+
+
             }
         }
     }
 
     private void createOrUpdateMarkerByLocation(Location location){
         if (marker == null) {
-            marker = gmap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).draggable(true));
+            marker = gmap.addMarker(new MarkerOptions()
+                    .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                    .draggable(true)
+                    .title("Posición actual")
+                    .snippet("yey!")
+                    .icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_sitemap_round)) );
         } else {
             marker.setPosition(new LatLng(location.getLatitude(), location.getLongitude()));
         }
@@ -248,6 +295,17 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
                 .build();
 
         gmap.animateCamera(CameraUpdateFactory.newCameraPosition(camera));
+    }
+
+    //pasar datos de posición al DataFragment
+    private void resume_data(Location location){
+
+        Intent intent = new Intent(getActivity(), DataActivity.class);
+
+        Toast.makeText(getContext(), "Datos guardados", Toast.LENGTH_SHORT).show();
+
+        startActivity(intent);
+
     }
 
     @Override
@@ -276,6 +334,12 @@ public class MpFragment extends Fragment implements OnMapReadyCallback, View.OnC
     public void onProviderDisabled(String s) {
 
     }
+
+
+    public  interface DataListener{
+        void sendData(String text);
+    }
+
 
 
     //PERMISOS
